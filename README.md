@@ -13,3 +13,9 @@ Then:
 ```
 ts-node index.ts ~/Downloads/*.svg
 ```
+
+## Options
+
+`--output`, `-o`: Output files to stdin (default)
+
+`--create`, `--create=path`, `-c`, `-c=path`: Create the files (optionally specify path... default path is the same directory as the command is run from)

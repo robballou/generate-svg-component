@@ -2,7 +2,13 @@
 
 Creates an SVG React component from an SVG file on the command line!
 
-This also removes `id` and `data-name` attributes as well as `<g>` tags.
+This command also:
+
+- removes `id` and `data-name` attributes
+- renames `xmlns` and `xlink` attributes
+- `<g>` tags
+
+There are still some things like component name that depend on file names that could be improved.
 
 ## Usage
 

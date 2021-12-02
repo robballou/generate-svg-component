@@ -46,7 +46,7 @@ export async function generateComponent(fileData: FileData, createFile: boolean 
             d('generateComponent: created file', fileName);
         }
         catch (err) {
-            console.error('Error creating file', fileName, err.code);
+            console.error('Error creating file', fileName, (err as any).code);
         }
     }
     return data;
@@ -58,32 +58,36 @@ function getComponentName(fileData: FileData) {
     return `${nameOnly.charAt(0).toUpperCase()}${nameOnly.slice(1)}`;
 }
 
-const ignoredElements = ['g'];
+const ignoredElements = ['g', 'defs', 'style'];
 
 declare global {
   interface ObjectConstructor {
-    fromEntries(xs: [string|number|symbol, any][]): object
+    fromEntries(xs: [string|number|symbol, any][]): unknown
   }
 }
 
 function walkSVG(xml: any, component: any) {
     const entries = Object.entries(xml);
+    const componentType = typeof component;
+    if (componentType !== 'object') {
+        return;
+    }
     entries
         .forEach((entry) => {
             const [tag, child] = entry;
             const children = child as any;
 
             if (!ignoredElements.includes(tag)) {
-                if (!(tag in component)) {
+                if (componentType === 'object' && !(tag in component)) {
                     component[tag] = {} as any;
                 }
-                else if (tag in component && !Array.isArray(component[tag])) {
+                else if (componentType === 'object' && tag in component && !Array.isArray(component[tag])) {
                     const currentValue = component[tag];
                     component[tag] = [currentValue];
                 }
 
                 const thisComponent = {} as any;
-                if ('$' in children) {
+                if (typeof children === 'object' && '$' in children) {
                     thisComponent['$'] = renameAttributes(filterAttributes(children['$']));
                 }
 
@@ -100,13 +104,14 @@ function walkSVG(xml: any, component: any) {
             Object.entries(children as any)
                 .filter(([childTag, ]) => childTag !== '$')
                 .forEach(([childTag, ]) => {
-                    // d({ childTag, tag, child: children[childTag], comp: component[tag], details });
+                    // d({ childTag, tag, child: children[childTag], comp: component[tag], parent });
                     if (Array.isArray(children[childTag])) {
                         children[childTag].forEach((thisChild: any) => {
                             walkSVG({ [childTag]: {...thisChild} }, parent);
                         });
                         return;
                     }
+                    // d(children[childTag], component[tag]);
                     walkSVG(children[childTag], component[tag]);
                 });
         });
@@ -145,8 +150,15 @@ export function renameAttributes(attributes: Attributes): Attributes {
         })) as Attributes;
 }
 
+function usage() {
+    console.info('Usage: npm start [...FILES]');
+}
+
 async function main(args: minimist.ParsedArgs) {
     const files = args._;
+    if (files.length === 0) {
+        return usage();
+    }
     const createFiles = args.create || args.c;
     const output = !(args.output || args.o) && !createFiles;
     if (typeof createFiles === 'string') {

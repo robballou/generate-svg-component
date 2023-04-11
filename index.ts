@@ -122,7 +122,7 @@ function assureCreateFilesPath(path: string) {
     mkdirp(path);
 }
 
-const ignoredAttributes = ['id', 'path-name', 'data-name'];
+const ignoredAttributes = ['id', 'path-name', 'data-name', 'class'];
 
 function filterAttributes(attributes: Attributes): Attributes {
     return Object.fromEntries(Object.entries(attributes)

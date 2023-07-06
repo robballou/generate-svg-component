@@ -18,16 +18,16 @@ type FileData = {
     fileName: string;
 }
 
-function readSVGFile(fileName: string) {
-    return readFilePromise(fileName, 'utf8')
-        .then(data => ({ status: true, data, fileName }));
+async function readSVGFile(fileName: string) {
+    const data = await readFilePromise(fileName, 'utf8');
+    return { status: true, data, fileName };
 }
 
 export async function generateComponent(fileData: FileData, createFile: boolean | string = false, output = true): Promise<string> {
     d('generateComponent', fileData);
     const xml = await parseStringPromise(fileData.data.trim());
     const builder = new Builder({ headless: true });
-    const component: any = {};
+    const component: Record<string, unknown> = {};
     walkSVG(xml, component);
     const svg = builder.buildObject(component);
     const componentName = getComponentName(fileData);
@@ -58,13 +58,7 @@ function getComponentName(fileData: FileData) {
     return `${nameOnly.charAt(0).toUpperCase()}${nameOnly.slice(1)}`;
 }
 
-const ignoredElements = ['g', 'defs', 'style'];
-
-declare global {
-  interface ObjectConstructor {
-    fromEntries(xs: [string|number|symbol, any][]): unknown
-  }
-}
+const ignoredElements = ['g', 'defs', 'style', 'title'];
 
 function walkSVG(xml: any, component: any) {
     const entries = Object.entries(xml);
@@ -101,10 +95,9 @@ function walkSVG(xml: any, component: any) {
 
             const parent = tag in component ? component[tag] : component;
 
-            Object.entries(children as any)
+            Object.entries(children)
                 .filter(([childTag, ]) => childTag !== '$')
                 .forEach(([childTag, ]) => {
-                    // d({ childTag, tag, child: children[childTag], comp: component[tag], parent });
                     if (Array.isArray(children[childTag])) {
                         children[childTag].forEach((thisChild: any) => {
                             walkSVG({ [childTag]: {...thisChild} }, parent);
